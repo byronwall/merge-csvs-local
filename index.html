@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CSV Merge and Download</title>
+    <style>
+      #drop_area {
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        width: 300px;
+        height: 200px;
+        padding: 10px;
+        text-align: center;
+        line-height: 180px;
+        color: #ccc;
+        font-family: Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="drop_area">Drop CSV files here</div>
+
+    <script>
+      document
+        .getElementById('drop_area')
+        .addEventListener('dragover', function (event) {
+          event.stopPropagation();
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+        });
+
+      document
+        .getElementById('drop_area')
+        .addEventListener('drop', function (event) {
+          event.stopPropagation();
+          event.preventDefault();
+
+          const files = event.dataTransfer.files;
+          let fileContents = [];
+          let header = null;
+          let filesRead = 0;
+
+          // Function to read each file
+          const readFile = (file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const content = e.target.result;
+              const lines = content.split('\n');
+              if (!header) {
+                header = lines[0]; // Keep the header from the first file
+              }
+              fileContents.push(lines.slice(1).join('\n')); // Exclude header from subsequent files
+              filesRead++;
+
+              // Check if all files have been read
+              if (filesRead === files.length) {
+                downloadMergedCSV([header, ...fileContents].join('\n').trim());
+              }
+            };
+            reader.readAsText(file);
+          };
+
+          // Read each file
+          Array.from(files).forEach((file) => {
+            readFile(file);
+          });
+        });
+
+      // Function to trigger the download of the merged CSV
+      function downloadMergedCSV(content) {
+        const blob = new Blob([content], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'merged.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    </script>
+  </body>
+</html>
